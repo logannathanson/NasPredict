@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset=utf-8>
+    <title>Nas Predict</title>
+    <script src=nebPay.js></script>
+    <link rel=stylesheet href=css/ui-block.css>
+    
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="p-3 mb-2 bg-info text-white" id=about style="border-style:solid">
+        <h1>NAS Predict</h1><br>
+        Make future-price predictions on the Nebulas blockchain<br><br>
+        How-to:
+        <ul>
+            <li>Enter a prediction for a future price of NAS</li>
+            <li>Ex: NAS will be worth $15 or more on July 1st, 2018, and $25 or more on January 1st, 2019.</li>
+            <li>Your prediction will be timestamped with the current date, as well as market with your public address</li>
+            <li>When the time comes, prove to your friends that you made the prediction, verfiaible by the Nebulas blockchain.</li>
+            <li>Type in a public address and click "Search by public address" to verify someone else's prediction by their address.</li>
+            <li>You can search as many times as you'd like, for free</li>
+        </ul>
+
+    <b>You can only write 1 prediction! Creating another will overwrite your current prediction</b>
+    <br>
+    This is a free service, only pay a small transaction fee to post your own prediction.
+    </div>
+
+    <div class="p-3 mb-2 bg-success text-white">
+    <br>
+    <div id=user_count>Total number of predictions: </div>
+
+    <!-- Prediction history -->
+    <div id=prediction_history></div>
+    </div>
+
+    <br>
+    <!-- The Dapp form -->
+    <div style="width: 100%;">
+
+    <div style="float: left; width: 50%; z-index: 1; top: 0; overflow-x: hidden; left: 0;">
+        <textarea class="form-control" rows="5" id=my_prediction placeholder="Input your prediction. CAUTION: If you have an existing prediction, it will be overwritten"></textarea>
+        <br>
+        <button class="btn btn-primary btn-lg" id=post_prediction onclick="javascript:onClickPostPrediction()">Post prediction</button>
+        <button class="btn btn-primary btn-lg" id=refresh onclick="javascript:onClickRefresh()">Refresh</button>
+    </div>
+
+    <div id=my_prediction_text></div>
+
+    <div style="float: right; width: 50%; z-index: 1; top: 0; overflow-x: hidden; right: 0;">
+        <textarea class="form-control" rows="5" id=search_area placeholder="Search for prediction by public address"></textarea>
+        <br>
+        <button class="btn btn-primary btn-lg" id=search_by_address enabled onclick="javascript:searchForPredictionByAddress()">Search by public address</button>
+    </div>
+    </div>
+
+    <br>
+    <div class="p-3 mb-2 bg-success text-white" id=search_result></div>
+    <br><br><br>
+
+    <!-- All of these scripts are dependancies from the Nebulas Web Wallet -->
+    <script src=lib/jquery-3.3.1.min.js></script>
+    
+    <!-- Front end logic for our Dapp -->
+    <script>
+        "use strict";
+
+        // Global variables used by our Dapp
+        var contract_address = "n1iTvwbXeUkpKhAroHYVRMcT1zSRhaFJDZo";
+
+        var NebPay = require("nebpay");
+        var nebPay = new NebPay();
+        //to check if the extension is installed
+        //if the extension is installed, var "webExtensionWallet" will be injected in to web page
+        if(typeof(webExtensionWallet) === "undefined"){
+            alert ("Extension wallet is not installed, please install it first.")
+        }
+
+        // Called by the Refresh button
+        function onClickRefresh() {
+            nebPay.simulateCall(contract_address, 0, "getPredictions", null, {
+                callback: NebPay.config.testnetUrl,
+                listener: onGetPrediction
+            });
+
+            nebPay.simulateCall(contract_address, 0, "getUserCount", null, {
+                callback: NebPay.config.testnetUrl,
+                listener: onGetUserCount
+            });
+
+            // nebPay.simulateCall(contract_address, 0, "getMyPrediction", null, {
+            //     callback: NebPay.config.testnetUrl,
+            //     listener: onGetMyPrediction
+            // })           
+        }
+
+        // function onGetMyPrediction(resp) {
+        //     $("my_prediction").empty();
+        //     $("my_prediction").append("<br>");
+
+        //     $("my_prediction").append(resp.result);            
+        // }
+
+        function onGetPrediction(resp) {
+            $("#prediction_history").empty();
+
+            var predictions = JSON.parse(resp.result);
+            
+            for(var i = 0; i < predictions.length; i++) {
+                var $span = $("<span></span>").text(predictions[i]);
+                $("#prediction_history").append($span);
+                $("#prediction_history").append("<br><br>");
+            }
+        }
+
+        function onGetUserCount(resp) {
+            $("#user_count").empty();
+
+            var user_count = JSON.parse(resp.result) - 1;
+
+            $("#user_count").append("Total number of predictions: " + user_count);
+        }
+
+        // Called by the post button
+        function onClickPostPrediction() {
+            nebPay.call(contract_address, 0, "postPrediction", JSON.stringify([$("#my_prediction").val()]), {
+                callback: NebPay.config.testnetUrl,
+                listener: onPostPrediction
+            }); 
+        }
+
+
+        function onPostPrediction(resp) {
+            onClickRefresh();
+        }
+
+        function searchForPredictionByAddress() {
+            nebPay.simulateCall(contract_address, 0, "getPredictionData", JSON.stringify([$("#search_area").val()]), {
+                callback: NebPay.config.testnetUrl,
+                listener: onGetPredictionData
+            }); 
+        }
+
+        function onGetPredictionData(resp) {
+            $("#search_result").empty();
+            $("#search_result").append("<b>Search result<b><br>");
+            $("#search_result").append(resp.result);
+        }
+
+        onClickRefresh();
+    </script>
+</body>
+</html>
