@@ -37,9 +37,14 @@
     <div class="p-3 mb-2 bg-success text-white">
     <br>
     <div id=user_count>Total number of predictions: </div>
+    <br>
 
     <!-- Prediction history -->
     <div id=prediction_history></div>
+    </div>
+
+    <div class="p-3 mb-2 bg-danger text-white">
+        <div id=mine><b>You do not have a prediction currently!<b></div>
     </div>
 
     <br>
@@ -74,7 +79,7 @@
         "use strict";
 
         // Global variables used by our Dapp
-        var contract_address = "n1iTvwbXeUkpKhAroHYVRMcT1zSRhaFJDZo";
+        var contract_address = "n22ehAhGwGZEsLULAbjNzApLPFoCXqgRcFV";
 
         var NebPay = require("nebpay");
         var nebPay = new NebPay();
@@ -87,27 +92,29 @@
         // Called by the Refresh button
         function onClickRefresh() {
             nebPay.simulateCall(contract_address, 0, "getPredictions", null, {
-                callback: NebPay.config.testnetUrl,
+                //callback: NebPay.config.testnetUrl,
                 listener: onGetPrediction
             });
 
             nebPay.simulateCall(contract_address, 0, "getUserCount", null, {
-                callback: NebPay.config.testnetUrl,
+                //callback: NebPay.config.testnetUrl,
                 listener: onGetUserCount
             });
 
-            // nebPay.simulateCall(contract_address, 0, "getMyPrediction", null, {
-            //     callback: NebPay.config.testnetUrl,
-            //     listener: onGetMyPrediction
-            // })           
+            nebPay.simulateCall(contract_address, 0, "getMyPrediction", null, {
+                //callback: NebPay.config.testnetUrl,
+                listener: onGetMyPrediction
+            })           
         }
 
-        // function onGetMyPrediction(resp) {
-        //     $("my_prediction").empty();
-        //     $("my_prediction").append("<br>");
-
-        //     $("my_prediction").append(resp.result);            
-        // }
+        function onGetMyPrediction(resp) {
+            var myResult = resp.result;
+            if (resp.result.length > 2) {
+                $("#mine").empty();
+                $("#mine").append("<h3><b>You already have a prediction! Submitting another will override your current one</b></h3>");
+                $("#mine").append(resp.result);
+            }
+        }
 
         function onGetPrediction(resp) {
             $("#prediction_history").empty();
@@ -132,7 +139,7 @@
         // Called by the post button
         function onClickPostPrediction() {
             nebPay.call(contract_address, 0, "postPrediction", JSON.stringify([$("#my_prediction").val()]), {
-                callback: NebPay.config.testnetUrl,
+                //callback: NebPay.config.testnetUrl,
                 listener: onPostPrediction
             }); 
         }
@@ -144,7 +151,7 @@
 
         function searchForPredictionByAddress() {
             nebPay.simulateCall(contract_address, 0, "getPredictionData", JSON.stringify([$("#search_area").val()]), {
-                callback: NebPay.config.testnetUrl,
+                //callback: NebPay.config.testnetUrl,
                 listener: onGetPredictionData
             }); 
         }
