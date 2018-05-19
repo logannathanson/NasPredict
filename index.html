@@ -154,6 +154,7 @@
                 //callback: NebPay.config.testnetUrl,
                 listener: onGetPredictionData
             }); 
+            onClickRefresh();
         }
 
         function onGetPredictionData(resp) {
@@ -161,6 +162,7 @@
             $("#search_result").append("<b>Search result<b><br>");
             $("#search_result").append(resp.result);
         }
+       onClickRefresh();
    </script>
 </body>
 </html>
